@@ -1,0 +1,9 @@
+target/
+*.class
+.idea/
+*.iml
+.vscode/
+
+# Keep database credentials out of version control
+src/main/resources/db.properties
+db.properties
