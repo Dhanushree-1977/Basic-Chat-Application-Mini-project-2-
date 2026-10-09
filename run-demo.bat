@@ -1,10 +1,7 @@
 @echo off
-set GSON=%USERPROFILE%\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar
-set MYSQL=%USERPROFILE%\.m2\repository\com\mysql\mysql-connector-j\8.3.0\mysql-connector-j-8.3.0.jar
-set BCRYPT=%USERPROFILE%\.m2\repository\org\mindrot\jbcrypt\0.4\jbcrypt-0.4.jar
-
+title Real-Time Chat System Demonstration
 echo ===================================================
-echo   Running Live Demonstration (All Phases)...
+echo   Running Live Demonstration (All 7 Phases)...
 echo ===================================================
-java -cp "target\classes;%GSON%;%MYSQL%;%BCRYPT%" com.realtimechat.Main demo
+java -cp "target\classes;lib\*" com.realtimechat.Main demo
 pause
