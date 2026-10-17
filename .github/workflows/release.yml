@@ -1,0 +1,63 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  release:
+    name: Build & Publish Release Assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Fat JAR
+        run: mvn clean package -DskipTests --batch-mode
+
+      - name: Prepare Release Bundle
+        run: |
+          mkdir -p release-bundle
+          cp target/realtime-chat-app-1.0-SNAPSHOT.jar release-bundle/realtime-chat-app.jar
+          cp run-all.bat run-client.bat run-server.bat release-bundle/
+          cp run-all.sh run-client.sh run-server.sh release-bundle/
+          cp README.md DEPLOYMENT.md LICENSE release-bundle/
+          cd release-bundle && zip -r ../realtime-chat-desktop-bundle.zip . && cd ..
+
+      - name: Determine Tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Real-Time Chat Application ${{ steps.tag.outputs.tag }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            target/realtime-chat-app-1.0-SNAPSHOT.jar
+            realtime-chat-desktop-bundle.zip
