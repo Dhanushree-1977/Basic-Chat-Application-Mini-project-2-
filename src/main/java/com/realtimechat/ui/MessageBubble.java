@@ -10,69 +10,58 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 
 /**
- * Custom Swing component that renders modern, rounded chat bubbles with
- * sender names, message content, and timestamps.
+ * Glassmorphic chat bubble with frosted translucent cards, specular lighting,
+ * and high-contrast modern typography.
  */
 public class MessageBubble extends JPanel {
 
-    private static final Font SENDER_FONT = new Font("SansSerif", Font.BOLD, 12);
-    private static final Font CONTENT_FONT = new Font("SansSerif", Font.PLAIN, 14);
-    private static final Font TIME_FONT = new Font("SansSerif", Font.ITALIC, 10);
-
-    // Color Palette
-    private static final Color OUTGOING_BG = new Color(220, 248, 198); // Soft WhatsApp green
-    private static final Color INCOMING_BG = new Color(255, 255, 255); // Crisp White
-    private static final Color SYSTEM_BG = new Color(235, 237, 239);   // Neutral Light Gray
-    private static final Color TIME_COLOR = new Color(128, 128, 128);
-
     public enum BubbleType {
-        OUTGOING, // Sent by the current user (Aligned Right)
-        INCOMING, // Received from another user (Aligned Left)
-        SYSTEM    // System notice (Centered)
+        OUTGOING, // Sent by current user (Right-aligned, glowing violet/indigo glass)
+        INCOMING, // Received from another user (Left-aligned, frosted pearl glass)
+        SYSTEM    // System notice (Centered, minimal frosted pill)
     }
 
     public MessageBubble(String sender, String content, String timestamp, BubbleType type) {
         setLayout(new FlowLayout(
                 type == BubbleType.OUTGOING ? FlowLayout.RIGHT :
                 type == BubbleType.INCOMING ? FlowLayout.LEFT : FlowLayout.CENTER,
-                10, 4
+                14, 4
         ));
         setOpaque(false);
 
-        Color bubbleBg = (type == BubbleType.OUTGOING) ? OUTGOING_BG :
-                         (type == BubbleType.INCOMING) ? INCOMING_BG : SYSTEM_BG;
-
-        // Bubble inner card
-        RoundedPanel card = new RoundedPanel(16, bubbleBg);
+        // Glass Card Container
+        GlassBubbleCard card = new GlassBubbleCard(type);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        card.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
 
         if (type != BubbleType.SYSTEM) {
             // Sender header
             JLabel senderLabel = new JLabel(type == BubbleType.OUTGOING ? "You" : sender);
-            senderLabel.setFont(SENDER_FONT);
-            senderLabel.setForeground(type == BubbleType.OUTGOING ? new Color(18, 107, 34) : new Color(33, 97, 140));
+            senderLabel.setFont(GlassUtils.FONT_BOLD);
+            senderLabel.setForeground(type == BubbleType.OUTGOING ? GlassUtils.TEXT_GLOW : GlassUtils.ACCENT_CYAN);
             card.add(senderLabel);
-            card.add(Box.createRigidArea(new Dimension(0, 3)));
+            card.add(Box.createRigidArea(new Dimension(0, 4)));
         }
 
-        // Message content (HTML formatting enables automatic line wrapping)
-        JLabel contentLabel = new JLabel("<html><body style='width: 280px;'>" + escapeHtml(content) + "</body></html>");
-        contentLabel.setFont(CONTENT_FONT);
-        contentLabel.setForeground(Color.BLACK);
+        // Message text
+        String textColor = (type == BubbleType.SYSTEM) ? "#94A3B8" : "#F8FAFC";
+        JLabel contentLabel = new JLabel("<html><body style='width: 290px; color: " + textColor + "; font-family: Segoe UI, sans-serif; font-size: 13px;'>" 
+                + escapeHtml(content) + "</body></html>");
+        contentLabel.setFont(GlassUtils.FONT_BODY);
         card.add(contentLabel);
 
         // Timestamp footer
         if (timestamp != null && !timestamp.isEmpty()) {
             card.add(Box.createRigidArea(new Dimension(0, 4)));
             JLabel timeLabel = new JLabel(timestamp);
-            timeLabel.setFont(TIME_FONT);
-            timeLabel.setForeground(TIME_COLOR);
+            timeLabel.setFont(GlassUtils.FONT_SMALL);
+            timeLabel.setForeground(new Color(203, 213, 225, 180));
             JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
             timePanel.setOpaque(false);
             timePanel.add(timeLabel);
@@ -91,28 +80,65 @@ public class MessageBubble extends JPanel {
     }
 
     /**
-     * Inner custom panel providing smooth rounded corners with anti-aliasing.
+     * Custom glassmorphic bubble card with specular gradient shine and hairline edge reflection.
      */
-    private static class RoundedPanel extends JPanel {
-        private final int radius;
-        private final Color backgroundColor;
+    private static class GlassBubbleCard extends JPanel {
+        private final BubbleType type;
 
-        public RoundedPanel(int radius, Color bgColor) {
-            this.radius = radius;
-            this.backgroundColor = bgColor;
+        public GlassBubbleCard(BubbleType type) {
+            this.type = type;
             setOpaque(false);
         }
 
         @Override
         protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(backgroundColor);
-            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radius, radius);
-            g2.setColor(new Color(210, 214, 222));
-            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radius, radius);
+
+            int w = getWidth();
+            int h = getHeight();
+            int radius = (type == BubbleType.SYSTEM) ? 14 : 18;
+
+            if (type == BubbleType.OUTGOING) {
+                // Vibrant Violet/Indigo Glass
+                GradientPaint bgGrad = new GradientPaint(
+                        0, 0, new Color(99, 102, 241, 185),
+                        w, h, new Color(139, 92, 246, 195)
+                );
+                g2.setPaint(bgGrad);
+                g2.fillRoundRect(0, 0, w - 1, h - 1, radius, radius);
+
+                // Specular top highlight
+                g2.setPaint(new GradientPaint(0, 0, new Color(255, 255, 255, 75), 0, h / 2f, new Color(255, 255, 255, 0)));
+                g2.fillRoundRect(0, 0, w - 1, h / 2, radius, radius);
+
+                // Hairline glowing border
+                g2.setPaint(new GradientPaint(0, 0, new Color(255, 255, 255, 130), 0, h, new Color(255, 255, 255, 45)));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, radius, radius);
+
+            } else if (type == BubbleType.INCOMING) {
+                // Frosted Pearl Glass
+                g2.setColor(new Color(255, 255, 255, 28));
+                g2.fillRoundRect(0, 0, w - 1, h - 1, radius, radius);
+
+                // Specular shine
+                g2.setPaint(new GradientPaint(0, 0, new Color(255, 255, 255, 45), 0, h / 2f, new Color(255, 255, 255, 5)));
+                g2.fillRoundRect(0, 0, w - 1, h / 2, radius, radius);
+
+                // Subtle white edge
+                g2.setPaint(new GradientPaint(0, 0, new Color(255, 255, 255, 80), 0, h, new Color(255, 255, 255, 20)));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, radius, radius);
+
+            } else {
+                // Minimal System Notice Pill
+                g2.setColor(new Color(255, 255, 255, 16));
+                g2.fillRoundRect(0, 0, w - 1, h - 1, radius, radius);
+                g2.setColor(new Color(255, 255, 255, 40));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, radius, radius);
+            }
+
             g2.dispose();
+            super.paintComponent(g);
         }
     }
 }

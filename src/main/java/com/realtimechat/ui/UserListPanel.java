@@ -1,6 +1,7 @@
 package com.realtimechat.ui;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -12,14 +13,16 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import javax.swing.DefaultListCellRenderer;
 
 /**
- * Sidebar panel displaying online users with presence status and unread badges.
- * Supports selective real-time presence updates and unread counts.
+ * Glassmorphic sidebar panel displaying online contacts with presence status
+ * and glowing unread notification badges.
  */
 public class UserListPanel extends JPanel {
 
@@ -34,15 +37,20 @@ public class UserListPanel extends JPanel {
 
     public UserListPanel() {
         setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(230, 0));
-        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(220, 224, 230)));
-        setBackground(new Color(245, 247, 250));
+        setPreferredSize(new Dimension(240, 0));
+        setOpaque(false);
+        setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(255, 255, 255, 30)));
 
-        // Header
+        // Header Panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(16, 16, 12, 16));
+
         headerLabel = new JLabel("Contacts (0 Online)");
-        headerLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
-        headerLabel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        add(headerLabel, BorderLayout.NORTH);
+        headerLabel.setFont(GlassUtils.FONT_BOLD);
+        headerLabel.setForeground(GlassUtils.TEXT_PRIMARY);
+        headerPanel.add(headerLabel, BorderLayout.WEST);
+        add(headerPanel, BorderLayout.NORTH);
 
         // List Model & JList
         listModel = new DefaultListModel<>();
@@ -51,37 +59,38 @@ public class UserListPanel extends JPanel {
         userList = new JList<>(listModel);
         userList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         userList.setSelectedIndex(0);
-        userList.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        userList.setBackground(new Color(245, 247, 250));
-        userList.setFixedCellHeight(38);
+        userList.setFont(GlassUtils.FONT_BODY);
+        userList.setOpaque(false);
+        userList.setFixedCellHeight(42);
 
-        // Custom list item renderer with presence dots and unread badges
+        // Glassmorphic List Item Renderer
         userList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, 
                                                           boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                label.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+                label.setOpaque(false);
+                label.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
                 String username = (String) value;
 
                 if (PUBLIC_CHAT.equals(username)) {
                     label.setText(username);
+                    label.setFont(GlassUtils.FONT_BOLD);
                 } else {
                     boolean online = presenceStatus.getOrDefault(username, true);
-                    String statusDot = online ? "🟢 " : "⚪ ";
+                    String statusDot = online ? "🟢 " : "⚫ ";
                     int unread = unreadCounts.getOrDefault(username, 0);
-                    String badge = (unread > 0) ? " (" + unread + " unread)" : "";
+                    String badge = (unread > 0) ? "  [" + unread + "]" : "";
                     label.setText(statusDot + username + badge);
+                    label.setFont(GlassUtils.FONT_BODY);
                 }
 
                 if (isSelected) {
-                    label.setBackground(new Color(214, 234, 248));
-                    label.setForeground(new Color(21, 67, 96));
+                    label.setForeground(Color.WHITE);
                 } else {
-                    label.setBackground(new Color(245, 247, 250));
-                    label.setForeground(Color.BLACK);
+                    label.setForeground(new Color(226, 232, 240));
                 }
-                return label;
+                return new GlassListCellWrapper(label, isSelected);
             }
         });
 
@@ -89,7 +98,6 @@ public class UserListPanel extends JPanel {
             if (!e.getValueIsAdjusting()) {
                 String selected = userList.getSelectedValue();
                 if (selected != null) {
-                    // Clear unread count when clicking conversation
                     if (!PUBLIC_CHAT.equals(selected)) {
                         unreadCounts.remove(selected);
                         userList.repaint();
@@ -102,13 +110,55 @@ public class UserListPanel extends JPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(userList);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getVerticalScrollBar().setUI(new GlassUtils.GlassScrollBarUI());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
     }
 
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // Frosted glass sidebar wash
+        g2.setColor(new Color(255, 255, 255, 12));
+        g2.fillRect(0, 0, getWidth(), getHeight());
+        g2.dispose();
+        super.paintComponent(g);
+    }
+
     /**
-     * Updates full user list from server CSV.
+     * Wrapper panel for list items to render smooth glass highlight pills when selected.
      */
+    private static class GlassListCellWrapper extends JPanel {
+        private final boolean isSelected;
+
+        public GlassListCellWrapper(Component comp, boolean isSelected) {
+            super(new BorderLayout());
+            this.isSelected = isSelected;
+            setOpaque(false);
+            setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+            add(comp, BorderLayout.CENTER);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            if (isSelected) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Glass active item pill
+                g2.setColor(new Color(99, 102, 241, 85));
+                g2.fillRoundRect(6, 2, getWidth() - 12, getHeight() - 4, 12, 12);
+                g2.setColor(new Color(165, 180, 252, 140));
+                g2.drawRoundRect(6, 2, getWidth() - 12, getHeight() - 4, 12, 12);
+                g2.dispose();
+            }
+            super.paintComponent(g);
+        }
+    }
+
     public void updateUserList(String csvUserList, String currentUsername) {
         String currentlySelected = userList.getSelectedValue();
         listModel.clear();
@@ -136,9 +186,6 @@ public class UserListPanel extends JPanel {
         }
     }
 
-    /**
-     * Updates presence for a specific user (ONLINE / OFFLINE) from PRESENCE message.
-     */
     public void updateUserPresence(String username, String status) {
         if (username == null) return;
         boolean isOnline = "ONLINE".equalsIgnoreCase(status);
@@ -153,9 +200,6 @@ public class UserListPanel extends JPanel {
         userList.repaint();
     }
 
-    /**
-     * Sets or increments unread badge count for a sender.
-     */
     public void setUnreadCount(String sender, int count) {
         if (count > 0) {
             unreadCounts.put(sender, count);

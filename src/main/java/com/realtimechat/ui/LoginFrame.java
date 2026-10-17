@@ -7,22 +7,22 @@ import com.realtimechat.model.MessageType;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagLayout;
 
 /**
- * Swing Authentication & Launch Entry Window.
- * Connects to the chat server, authenticates credentials,
- * and launches the main ChatFrame upon successful validation.
+ * Glassmorphic Swing Authentication Window.
+ * Features an aurora gradient backdrop, frosted translucent glass card,
+ * glowing input fields, and modern glass buttons.
  */
 public class LoginFrame extends JFrame {
 
@@ -31,106 +31,142 @@ public class LoginFrame extends JFrame {
 
     private final ClientNetworkService networkService;
 
-    private JTextField hostField;
-    private JTextField portField;
-    private JTextField usernameField;
-    private JPasswordField passwordField;
+    private GlassUtils.GlassTextField hostField;
+    private GlassUtils.GlassTextField portField;
+    private GlassUtils.GlassTextField usernameField;
+    private GlassUtils.GlassPasswordField passwordField;
     private JLabel statusLabel;
-    private JButton loginButton;
+    private GlassUtils.GlassButton loginButton;
 
     public LoginFrame() {
         this.networkService = new ClientNetworkService(DEFAULT_HOST, DEFAULT_PORT);
 
         setTitle("Real-Time Chat - Sign In");
-        setSize(420, 520);
+        setSize(460, 580);
         setResizable(false);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         initUI();
 
-        // Listen for server authentication responses (dispatched to EDT by networkService)
+        // Listen for server authentication responses
         networkService.addMessageListener(this::handleServerResponse);
     }
 
     private void initUI() {
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 35, 25, 35));
-        mainPanel.setBackground(Color.WHITE);
+        // 1. Aurora Mesh Background
+        GlassUtils.BackgroundPanel backgroundPanel = new GlassUtils.BackgroundPanel();
+        backgroundPanel.setLayout(new GridBagLayout()); // Centers the glass card
+
+        // 2. Center Frosted Glass Card
+        GlassUtils.GlassCard card = new GlassUtils.GlassCard(24);
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(BorderFactory.createEmptyBorder(30, 36, 30, 36));
+        card.setPreferredSize(new Dimension(380, 500));
 
         // Header Title
-        JLabel titleLabel = new JLabel("Welcome Back!");
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(44, 62, 80));
+        JLabel logoLabel = new JLabel("✨ REAL-TIME CHAT");
+        logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        logoLabel.setForeground(GlassUtils.ACCENT_CYAN);
+        logoLabel.setAlignmentX(CENTER_ALIGNMENT);
+        card.add(logoLabel);
+
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+
+        JLabel titleLabel = new JLabel("Welcome Back");
+        titleLabel.setFont(GlassUtils.FONT_TITLE);
+        titleLabel.setForeground(GlassUtils.TEXT_PRIMARY);
         titleLabel.setAlignmentX(CENTER_ALIGNMENT);
-        mainPanel.add(titleLabel);
+        card.add(titleLabel);
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        card.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        JLabel subtitleLabel = new JLabel("Sign in to your account");
-        subtitleLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        subtitleLabel.setForeground(Color.GRAY);
+        JLabel subtitleLabel = new JLabel("Sign in to continue your conversations");
+        subtitleLabel.setFont(GlassUtils.FONT_SUBTITLE);
+        subtitleLabel.setForeground(GlassUtils.TEXT_SECONDARY);
         subtitleLabel.setAlignmentX(CENTER_ALIGNMENT);
-        mainPanel.add(subtitleLabel);
+        card.add(subtitleLabel);
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        card.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Server Connection Config Fields
-        hostField = new JTextField(DEFAULT_HOST);
-        portField = new JTextField(String.valueOf(DEFAULT_PORT));
-        usernameField = new JTextField();
-        passwordField = new JPasswordField();
+        // Form Fields
+        hostField = new GlassUtils.GlassTextField(DEFAULT_HOST);
+        portField = new GlassUtils.GlassTextField(String.valueOf(DEFAULT_PORT));
+        usernameField = new GlassUtils.GlassTextField();
+        passwordField = new GlassUtils.GlassPasswordField();
 
-        addField(mainPanel, "Server Host:", hostField);
-        addField(mainPanel, "Server Port:", portField);
-        addField(mainPanel, "Username:", usernameField);
-        addField(mainPanel, "Password:", passwordField);
+        // Host and Port in side-by-side row
+        JPanel connectionRow = new JPanel(new BorderLayout(10, 0));
+        connectionRow.setOpaque(false);
+
+        JPanel hostCol = new JPanel();
+        hostCol.setLayout(new BoxLayout(hostCol, BoxLayout.Y_AXIS));
+        hostCol.setOpaque(false);
+        JLabel hostLabel = new JLabel("Server Host");
+        hostLabel.setFont(GlassUtils.FONT_SMALL);
+        hostLabel.setForeground(GlassUtils.TEXT_SECONDARY);
+        hostCol.add(hostLabel);
+        hostCol.add(Box.createRigidArea(new Dimension(0, 4)));
+        hostCol.add(hostField);
+        connectionRow.add(hostCol, BorderLayout.CENTER);
+
+        JPanel portCol = new JPanel();
+        portCol.setLayout(new BoxLayout(portCol, BoxLayout.Y_AXIS));
+        portCol.setOpaque(false);
+        JLabel portLabel = new JLabel("Port");
+        portLabel.setFont(GlassUtils.FONT_SMALL);
+        portLabel.setForeground(GlassUtils.TEXT_SECONDARY);
+        portCol.add(portLabel);
+        portCol.add(Box.createRigidArea(new Dimension(0, 4)));
+        portField.setPreferredSize(new Dimension(80, 36));
+        portCol.add(portField);
+        connectionRow.add(portCol, BorderLayout.EAST);
+
+        card.add(connectionRow);
+        card.add(Box.createRigidArea(new Dimension(0, 12)));
+
+        addField(card, "Username", usernameField);
+        addField(card, "Password", passwordField);
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        statusLabel.setForeground(new Color(192, 57, 43));
+        statusLabel.setFont(GlassUtils.FONT_SMALL);
+        statusLabel.setForeground(GlassUtils.ACCENT_ROSE);
         statusLabel.setAlignmentX(CENTER_ALIGNMENT);
-        mainPanel.add(statusLabel);
+        card.add(statusLabel);
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // Login Button
-        loginButton = new JButton("Sign In");
-        loginButton.setFont(new Font("SansSerif", Font.BOLD, 14));
-        loginButton.setBackground(new Color(41, 128, 185));
-        loginButton.setForeground(Color.WHITE);
-        loginButton.setFocusPainted(false);
-        loginButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        // Sign In Button
+        loginButton = new GlassUtils.GlassButton("Sign In", true);
+        loginButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         loginButton.setAlignmentX(CENTER_ALIGNMENT);
         loginButton.addActionListener(e -> performLogin());
-        mainPanel.add(loginButton);
+        card.add(loginButton);
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        // Link to Registration Frame
-        JButton registerLinkButton = new JButton("Don't have an account? Register");
-        registerLinkButton.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        registerLinkButton.setBorderPainted(false);
-        registerLinkButton.setContentAreaFilled(false);
-        registerLinkButton.setForeground(new Color(41, 128, 185));
+        // Register Link Button
+        GlassUtils.GlassButton registerLinkButton = new GlassUtils.GlassButton("Don't have an account? Register", false);
+        registerLinkButton.setFont(GlassUtils.FONT_SUBTITLE);
+        registerLinkButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         registerLinkButton.setAlignmentX(CENTER_ALIGNMENT);
         registerLinkButton.addActionListener(e -> openRegisterFrame());
-        mainPanel.add(registerLinkButton);
+        card.add(registerLinkButton);
 
-        add(mainPanel);
+        backgroundPanel.add(card);
+        setContentPane(backgroundPanel);
     }
 
-    private void addField(JPanel panel, String labelText, JTextField field) {
+    private void addField(JPanel panel, String labelText, javax.swing.JComponent field) {
         JLabel label = new JLabel(labelText);
-        label.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        label.setFont(GlassUtils.FONT_SMALL);
+        label.setForeground(GlassUtils.TEXT_SECONDARY);
         label.setAlignmentX(LEFT_ALIGNMENT);
         panel.add(label);
 
         panel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        field.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         field.setAlignmentX(LEFT_ALIGNMENT);
         panel.add(field);
 
@@ -144,7 +180,7 @@ public class LoginFrame extends JFrame {
         String password = new String(passwordField.getPassword());
 
         if (username.isEmpty() || password.isEmpty()) {
-            statusLabel.setForeground(new Color(192, 57, 43));
+            statusLabel.setForeground(GlassUtils.ACCENT_ROSE);
             statusLabel.setText("Please enter both username and password.");
             return;
         }
@@ -153,18 +189,18 @@ public class LoginFrame extends JFrame {
         try {
             port = Integer.parseInt(portStr);
         } catch (NumberFormatException e) {
+            statusLabel.setForeground(GlassUtils.ACCENT_ROSE);
             statusLabel.setText("Invalid port number.");
             return;
         }
 
         statusLabel.setText("Connecting to server...");
-        statusLabel.setForeground(new Color(41, 128, 185));
+        statusLabel.setForeground(GlassUtils.ACCENT_CYAN);
 
-        // Connect if not already connected
         if (!networkService.isConnected()) {
             boolean connected = networkService.connect();
             if (!connected) {
-                statusLabel.setForeground(new Color(192, 57, 43));
+                statusLabel.setForeground(GlassUtils.ACCENT_ROSE);
                 statusLabel.setText("Could not reach chat server at " + host + ":" + port);
                 return;
             }
@@ -172,6 +208,7 @@ public class LoginFrame extends JFrame {
 
         networkService.setCurrentUsername(username);
         statusLabel.setText("Authenticating credentials...");
+        statusLabel.setForeground(GlassUtils.ACCENT_CYAN);
         networkService.sendMessage(new Message(MessageType.LOGIN, username, null, password));
     }
 
@@ -179,7 +216,7 @@ public class LoginFrame extends JFrame {
         if (!networkService.isConnected()) {
             boolean connected = networkService.connect();
             if (!connected) {
-                statusLabel.setForeground(new Color(192, 57, 43));
+                statusLabel.setForeground(GlassUtils.ACCENT_ROSE);
                 statusLabel.setText("Could not reach chat server to register.");
                 return;
             }
@@ -195,26 +232,20 @@ public class LoginFrame extends JFrame {
 
         if (msg.getType() == MessageType.LOGIN) {
             if (msg.getContent() != null && msg.getContent().toLowerCase().contains("successful")) {
-                // Authentication succeeded: open ChatFrame
                 dispose();
                 ChatFrame chatFrame = new ChatFrame(networkService, usernameField.getText().trim());
                 chatFrame.setVisible(true);
             } else {
-                statusLabel.setForeground(new Color(41, 128, 185));
+                statusLabel.setForeground(GlassUtils.ACCENT_CYAN);
                 statusLabel.setText(msg.getContent());
             }
         } else if (msg.getType() == MessageType.ERROR) {
-            statusLabel.setForeground(new Color(192, 57, 43));
+            statusLabel.setForeground(GlassUtils.ACCENT_ROSE);
             statusLabel.setText(msg.getContent());
         }
     }
 
     public static void main(String[] args) {
-        // Set modern Look and Feel
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
-
         SwingUtilities.invokeLater(() -> {
             LoginFrame frame = new LoginFrame();
             frame.setVisible(true);

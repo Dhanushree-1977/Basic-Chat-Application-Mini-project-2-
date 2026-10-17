@@ -7,43 +7,36 @@ import com.realtimechat.model.MessageType;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
 
 /**
- * Swing Registration Frame.
- * Handles new account creation with client-side form validation before transmission.
+ * Glassmorphic Swing Registration Window.
+ * Form validation with frosted glass cards, glowing inputs, and neon buttons.
  */
 public class RegisterFrame extends JFrame {
 
     private final ClientNetworkService networkService;
     private final JFrame parentLoginFrame;
 
-    private JTextField usernameField;
-    private JPasswordField passwordField;
-    private JPasswordField confirmPasswordField;
+    private GlassUtils.GlassTextField usernameField;
+    private GlassUtils.GlassPasswordField passwordField;
+    private GlassUtils.GlassPasswordField confirmPasswordField;
     private JLabel statusLabel;
-    private JButton registerButton;
+    private GlassUtils.GlassButton registerButton;
 
     public RegisterFrame(ClientNetworkService networkService, JFrame parentLoginFrame) {
         this.networkService = networkService;
         this.parentLoginFrame = parentLoginFrame;
 
-        setTitle("Real-Time Chat - Register Account");
-        setSize(420, 480);
+        setTitle("Real-Time Chat - Create Account");
+        setSize(460, 560);
         setResizable(false);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -55,63 +48,71 @@ public class RegisterFrame extends JFrame {
     }
 
     private void initUI() {
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(25, 35, 25, 35));
-        mainPanel.setBackground(Color.WHITE);
+        // 1. Aurora Mesh Background
+        GlassUtils.BackgroundPanel backgroundPanel = new GlassUtils.BackgroundPanel();
+        backgroundPanel.setLayout(new GridBagLayout());
+
+        // 2. Frosted Glass Card
+        GlassUtils.GlassCard card = new GlassUtils.GlassCard(24);
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(BorderFactory.createEmptyBorder(28, 36, 28, 36));
+        card.setPreferredSize(new Dimension(380, 480));
 
         // Header Title
-        JLabel titleLabel = new JLabel("Create an Account");
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 22));
-        titleLabel.setForeground(new Color(44, 62, 80));
+        JLabel logoLabel = new JLabel("🚀 JOIN REAL-TIME CHAT");
+        logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        logoLabel.setForeground(GlassUtils.ACCENT_CYAN);
+        logoLabel.setAlignmentX(CENTER_ALIGNMENT);
+        card.add(logoLabel);
+
+        card.add(Box.createRigidArea(new Dimension(0, 6)));
+
+        JLabel titleLabel = new JLabel("Create Account");
+        titleLabel.setFont(GlassUtils.FONT_TITLE);
+        titleLabel.setForeground(GlassUtils.TEXT_PRIMARY);
         titleLabel.setAlignmentX(CENTER_ALIGNMENT);
-        mainPanel.add(titleLabel);
+        card.add(titleLabel);
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        card.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        JLabel subtitleLabel = new JLabel("Sign up to chat with friends in real-time");
-        subtitleLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        subtitleLabel.setForeground(Color.GRAY);
+        JLabel subtitleLabel = new JLabel("Start messaging securely via TLS sockets");
+        subtitleLabel.setFont(GlassUtils.FONT_SUBTITLE);
+        subtitleLabel.setForeground(GlassUtils.TEXT_SECONDARY);
         subtitleLabel.setAlignmentX(CENTER_ALIGNMENT);
-        mainPanel.add(subtitleLabel);
+        card.add(subtitleLabel);
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        card.add(Box.createRigidArea(new Dimension(0, 20)));
 
         // Form Fields
-        usernameField = new JTextField(15);
-        passwordField = new JPasswordField(15);
-        confirmPasswordField = new JPasswordField(15);
+        usernameField = new GlassUtils.GlassTextField();
+        passwordField = new GlassUtils.GlassPasswordField();
+        confirmPasswordField = new GlassUtils.GlassPasswordField();
 
-        addField(mainPanel, "Username (3-20 letters/numbers):", usernameField);
-        addField(mainPanel, "Password (minimum 6 characters):", passwordField);
-        addField(mainPanel, "Confirm Password:", confirmPasswordField);
+        addField(card, "Username (3-20 letters/numbers)", usernameField);
+        addField(card, "Password (minimum 6 characters)", passwordField);
+        addField(card, "Confirm Password", confirmPasswordField);
 
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        statusLabel.setForeground(new Color(192, 57, 43));
+        statusLabel.setFont(GlassUtils.FONT_SMALL);
+        statusLabel.setForeground(GlassUtils.ACCENT_ROSE);
         statusLabel.setAlignmentX(CENTER_ALIGNMENT);
-        mainPanel.add(statusLabel);
+        card.add(statusLabel);
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        card.add(Box.createRigidArea(new Dimension(0, 8)));
 
-        // Action Buttons
-        registerButton = new JButton("Register Account");
-        registerButton.setFont(new Font("SansSerif", Font.BOLD, 14));
-        registerButton.setBackground(new Color(41, 128, 185));
-        registerButton.setForeground(Color.WHITE);
-        registerButton.setFocusPainted(false);
-        registerButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        // Register Button
+        registerButton = new GlassUtils.GlassButton("Register Account", true);
+        registerButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         registerButton.setAlignmentX(CENTER_ALIGNMENT);
         registerButton.addActionListener(e -> performRegister());
-        mainPanel.add(registerButton);
+        card.add(registerButton);
 
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        JButton backButton = new JButton("Back to Login");
-        backButton.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        backButton.setBorderPainted(false);
-        backButton.setContentAreaFilled(false);
-        backButton.setForeground(new Color(41, 128, 185));
+        // Back to Login Button
+        GlassUtils.GlassButton backButton = new GlassUtils.GlassButton("Back to Login", false);
+        backButton.setFont(GlassUtils.FONT_SUBTITLE);
+        backButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         backButton.setAlignmentX(CENTER_ALIGNMENT);
         backButton.addActionListener(e -> {
             dispose();
@@ -119,25 +120,26 @@ public class RegisterFrame extends JFrame {
                 parentLoginFrame.setVisible(true);
             }
         });
-        mainPanel.add(backButton);
+        card.add(backButton);
 
-        add(mainPanel);
+        backgroundPanel.add(card);
+        setContentPane(backgroundPanel);
     }
 
-    private void addField(JPanel panel, String labelText, JTextField field) {
+    private void addField(JPanel panel, String labelText, javax.swing.JComponent field) {
         JLabel label = new JLabel(labelText);
-        label.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        label.setFont(GlassUtils.FONT_SMALL);
+        label.setForeground(GlassUtils.TEXT_SECONDARY);
         label.setAlignmentX(LEFT_ALIGNMENT);
         panel.add(label);
 
         panel.add(Box.createRigidArea(new Dimension(0, 4)));
 
-        field.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         field.setAlignmentX(LEFT_ALIGNMENT);
         panel.add(field);
 
-        panel.add(Box.createRigidArea(new Dimension(0, 12)));
+        panel.add(Box.createRigidArea(new Dimension(0, 8)));
     }
 
     private void performRegister() {
@@ -166,7 +168,7 @@ public class RegisterFrame extends JFrame {
         }
 
         statusLabel.setText("Sending registration request...");
-        statusLabel.setForeground(new Color(41, 128, 185));
+        statusLabel.setForeground(GlassUtils.ACCENT_CYAN);
 
         networkService.sendMessage(new Message(MessageType.REGISTER, username, null, password));
     }
@@ -184,7 +186,7 @@ public class RegisterFrame extends JFrame {
                 parentLoginFrame.setVisible(true);
             }
         } else if (msg.getType() == MessageType.ERROR) {
-            statusLabel.setForeground(new Color(192, 57, 43));
+            statusLabel.setForeground(GlassUtils.ACCENT_ROSE);
             statusLabel.setText(msg.getContent());
         }
     }

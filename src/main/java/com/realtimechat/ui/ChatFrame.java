@@ -10,20 +10,21 @@ import com.realtimechat.model.StoredMessage;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -31,12 +32,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Main Chat Application Window in Swing.
+ * Main Glassmorphic Chat Window in Swing.
  * Features:
- * - Real-time message bubbles with timestamps and sender headers
- * - Online user list sidebar (UserListPanel)
- * - Live connection status indicator (Connected / Disconnected)
- * - 1-to-1 private messaging and history loading
+ * - Aurora gradient ambient background
+ * - Frosted glass top header with status badges
+ * - Translucent message bubble timeline with specular highlights
+ * - Frosted sidebar with presence indicators
+ * - Glowing glass input dock
  */
 public class ChatFrame extends JFrame {
 
@@ -49,9 +51,9 @@ public class ChatFrame extends JFrame {
     private UserListPanel userListPanel;
     private JPanel messagesContainer;
     private JScrollPane chatScrollPane;
-    private JTextField messageInputField;
-    private JButton sendButton;
-    private JButton historyButton;
+    private GlassUtils.GlassTextField messageInputField;
+    private GlassUtils.GlassButton sendButton;
+    private GlassUtils.GlassButton historyButton;
     private JLabel currentChatHeader;
     private JLabel connectionStatusLabel;
 
@@ -61,9 +63,9 @@ public class ChatFrame extends JFrame {
         this.networkService = networkService;
         this.currentUsername = currentUsername;
 
-        setTitle("Real-Time Chat - Logged in as: " + currentUsername);
-        setSize(900, 620);
-        setMinimumSize(new Dimension(650, 450));
+        setTitle("Real-Time Chat - " + currentUsername);
+        setSize(960, 660);
+        setMinimumSize(new Dimension(720, 500));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -72,35 +74,36 @@ public class ChatFrame extends JFrame {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout());
+        // Window container with aurora mesh gradient background
+        GlassUtils.BackgroundPanel backgroundPanel = new GlassUtils.BackgroundPanel();
+        backgroundPanel.setLayout(new BorderLayout());
 
-        // 1. Top Header Panel
-        JPanel topHeader = new JPanel(new BorderLayout());
-        topHeader.setBackground(new Color(44, 62, 80));
-        topHeader.setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
+        // 1. Top Frosted Header Bar
+        JPanel topHeader = new FrostedBar(true);
+        topHeader.setLayout(new BorderLayout());
+        topHeader.setBorder(BorderFactory.createEmptyBorder(14, 20, 14, 20));
 
         currentChatHeader = new JLabel("📢 Public Chat");
-        currentChatHeader.setFont(new Font("SansSerif", Font.BOLD, 16));
-        currentChatHeader.setForeground(Color.WHITE);
+        currentChatHeader.setFont(GlassUtils.FONT_TITLE);
+        currentChatHeader.setForeground(GlassUtils.TEXT_PRIMARY);
         topHeader.add(currentChatHeader, BorderLayout.WEST);
 
-        JPanel rightHeaderPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        JPanel rightHeaderPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
         rightHeaderPanel.setOpaque(false);
 
         connectionStatusLabel = new JLabel("🟢 Connected");
-        connectionStatusLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
-        connectionStatusLabel.setForeground(new Color(46, 204, 113)); // Bright green
+        connectionStatusLabel.setFont(GlassUtils.FONT_BOLD);
+        connectionStatusLabel.setForeground(GlassUtils.ACCENT_GREEN);
         rightHeaderPanel.add(connectionStatusLabel);
 
-        JLabel userBadge = new JLabel("👤 " + currentUsername);
-        userBadge.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        userBadge.setForeground(Color.WHITE);
+        // User Profile Pill
+        GlassProfilePill userBadge = new GlassProfilePill("👤 " + currentUsername);
         rightHeaderPanel.add(userBadge);
 
         topHeader.add(rightHeaderPanel, BorderLayout.EAST);
-        add(topHeader, BorderLayout.NORTH);
+        backgroundPanel.add(topHeader, BorderLayout.NORTH);
 
-        // 2. Left Sidebar: Online User List
+        // 2. Left Frosted Sidebar (User List)
         userListPanel = new UserListPanel();
         userListPanel.setOnUserSelected(recipient -> {
             this.activeRecipient = recipient;
@@ -108,69 +111,66 @@ public class ChatFrame extends JFrame {
                 currentChatHeader.setText("📢 Public Chat");
                 historyButton.setEnabled(false);
             } else {
-                currentChatHeader.setText("💬 Private Chat with: " + recipient);
+                currentChatHeader.setText("💬 " + recipient);
                 historyButton.setEnabled(true);
             }
             addSystemNotice("Switched conversation to: " + 
                     ("ALL".equals(recipient) ? "Public Chat" : recipient));
         });
-        add(userListPanel, BorderLayout.WEST);
+        backgroundPanel.add(userListPanel, BorderLayout.WEST);
 
-        // 3. Central Chat Area (Message Bubbles)
+        // 3. Central Chat Bubble Container
         messagesContainer = new JPanel();
         messagesContainer.setLayout(new BoxLayout(messagesContainer, BoxLayout.Y_AXIS));
-        messagesContainer.setBackground(new Color(248, 249, 250));
+        messagesContainer.setOpaque(false);
+        messagesContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         chatScrollPane = new JScrollPane(messagesContainer);
+        chatScrollPane.setOpaque(false);
+        chatScrollPane.getViewport().setOpaque(false);
         chatScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        chatScrollPane.getVerticalScrollBar().setUI(new GlassUtils.GlassScrollBarUI());
         chatScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        add(chatScrollPane, BorderLayout.CENTER);
+        backgroundPanel.add(chatScrollPane, BorderLayout.CENTER);
 
-        // 4. Bottom Input Bar
-        JPanel bottomPanel = new JPanel(new BorderLayout(10, 0));
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
-        bottomPanel.setBackground(Color.WHITE);
+        // 4. Bottom Glass Input Dock
+        JPanel bottomPanel = new FrostedBar(false);
+        bottomPanel.setLayout(new BorderLayout(12, 0));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(12, 18, 12, 18));
 
-        historyButton = new JButton("Load History");
-        historyButton.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        historyButton.setEnabled(false); // Initially in Public room
+        historyButton = new GlassUtils.GlassButton("Load History", false);
+        historyButton.setEnabled(false);
+        historyButton.setPreferredSize(new Dimension(115, 40));
         historyButton.addActionListener(e -> requestHistory());
         bottomPanel.add(historyButton, BorderLayout.WEST);
 
-        messageInputField = new JTextField();
-        messageInputField.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        messageInputField = new GlassUtils.GlassTextField();
         messageInputField.addActionListener(e -> handleSendMessage());
         bottomPanel.add(messageInputField, BorderLayout.CENTER);
 
-        sendButton = new JButton("Send");
-        sendButton.setFont(new Font("SansSerif", Font.BOLD, 13));
-        sendButton.setBackground(new Color(41, 128, 185));
-        sendButton.setForeground(Color.WHITE);
-        sendButton.setFocusPainted(false);
-        sendButton.setPreferredSize(new Dimension(85, 36));
+        sendButton = new GlassUtils.GlassButton("Send", true);
+        sendButton.setPreferredSize(new Dimension(95, 40));
         sendButton.addActionListener(e -> handleSendMessage());
         bottomPanel.add(sendButton, BorderLayout.EAST);
 
-        add(bottomPanel, BorderLayout.SOUTH);
+        backgroundPanel.add(bottomPanel, BorderLayout.SOUTH);
+
+        setContentPane(backgroundPanel);
     }
 
     private void setupNetworking() {
-        // Register connection state listener
         networkService.addConnectionListener(connected -> {
             if (connected) {
                 connectionStatusLabel.setText("🟢 Connected");
-                connectionStatusLabel.setForeground(new Color(46, 204, 113));
+                connectionStatusLabel.setForeground(GlassUtils.ACCENT_GREEN);
             } else {
                 connectionStatusLabel.setText("🔴 Disconnected");
-                connectionStatusLabel.setForeground(new Color(231, 76, 60));
+                connectionStatusLabel.setForeground(GlassUtils.ACCENT_ROSE);
                 addSystemNotice("Connection to server was lost.");
             }
         });
 
-        // Register incoming message listener (invoked on Swing EDT by ClientNetworkService)
         networkService.addMessageListener(this::handleIncomingMessage);
-
-        // Fetch initial user list
         networkService.sendMessage(new Message(MessageType.USER_LIST, currentUsername, null, ""));
     }
 
@@ -179,15 +179,12 @@ public class ChatFrame extends JFrame {
         if (text.isEmpty()) return;
 
         messageInputField.setText("");
-
         String timeStr = TIME_FMT.format(Instant.now().atZone(ZoneId.systemDefault()));
 
         if ("ALL".equalsIgnoreCase(activeRecipient)) {
-            // Public Broadcast
             networkService.sendMessage(new Message(MessageType.CHAT, currentUsername, null, text));
             addMessageBubble(currentUsername, text, timeStr, MessageBubble.BubbleType.OUTGOING);
         } else {
-            // Private 1-to-1 message
             networkService.sendMessage(new Message(MessageType.CHAT, currentUsername, activeRecipient, text));
             addMessageBubble(currentUsername, text, timeStr, MessageBubble.BubbleType.OUTGOING);
         }
@@ -195,7 +192,7 @@ public class ChatFrame extends JFrame {
 
     private void requestHistory() {
         if ("ALL".equalsIgnoreCase(activeRecipient)) return;
-        addSystemNotice("Requesting chat history with " + activeRecipient + "...");
+        addSystemNotice("Requesting conversation history with " + activeRecipient + "...");
         networkService.sendMessage(new Message(MessageType.HISTORY, currentUsername, null, activeRecipient));
     }
 
@@ -207,7 +204,6 @@ public class ChatFrame extends JFrame {
 
         switch (msg.getType()) {
             case CHAT:
-                // Check if message is from server or another user
                 if ("SERVER".equalsIgnoreCase(msg.getSender())) {
                     addSystemNotice(msg.getContent());
                 } else {
@@ -306,5 +302,67 @@ public class ChatFrame extends JFrame {
             JScrollBar verticalBar = chatScrollPane.getVerticalScrollBar();
             verticalBar.setValue(verticalBar.getMaximum());
         });
+    }
+
+    /**
+     * Frosted Glass Bar for Top Header and Bottom Input Dock.
+     */
+    private static class FrostedBar extends JPanel {
+        private final boolean isTop;
+
+        public FrostedBar(boolean isTop) {
+            this.isTop = isTop;
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            // Glass background wash
+            g2.setColor(new Color(255, 255, 255, 16));
+            g2.fillRect(0, 0, w, h);
+
+            // Hairline divider
+            g2.setColor(new Color(255, 255, 255, 35));
+            if (isTop) {
+                g2.drawLine(0, h - 1, w, h - 1);
+            } else {
+                g2.drawLine(0, 0, w, 0);
+            }
+
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    /**
+     * Glass Profile Badge Pill.
+     */
+    private static class GlassProfilePill extends JPanel {
+        public GlassProfilePill(String text) {
+            setLayout(new FlowLayout(FlowLayout.CENTER, 10, 4));
+            setOpaque(false);
+            JLabel label = new JLabel(text);
+            label.setFont(GlassUtils.FONT_BOLD);
+            label.setForeground(GlassUtils.TEXT_PRIMARY);
+            add(label);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(new Color(255, 255, 255, 22));
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            g2.setColor(new Color(255, 255, 255, 60));
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+            g2.dispose();
+            super.paintComponent(g);
+        }
     }
 }
