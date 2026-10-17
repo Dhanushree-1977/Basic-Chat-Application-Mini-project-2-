@@ -7,3 +7,7 @@ target/
 # Keep database credentials out of version control
 src/main/resources/db.properties
 db.properties
+
+*.log
+*Test*.java
+Test*.java
