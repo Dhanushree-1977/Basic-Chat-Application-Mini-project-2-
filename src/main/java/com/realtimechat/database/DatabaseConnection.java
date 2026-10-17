@@ -37,23 +37,42 @@ public class DatabaseConnection {
 
             // Second attempt fallback: Load directly from file system
             if (inStream == null) {
-                inStream = new FileInputStream("src/main/resources/" + PROPERTIES_FILE);
+                java.io.File localFile = new java.io.File("src/main/resources/" + PROPERTIES_FILE);
+                if (localFile.exists()) {
+                    inStream = new FileInputStream(localFile);
+                }
             }
 
-            props.load(inStream);
+            if (inStream != null) {
+                props.load(inStream);
+                driver = props.getProperty("db.driver", "com.mysql.cj.jdbc.Driver");
+                url = props.getProperty("db.url");
+                user = props.getProperty("db.user");
+                password = props.getProperty("db.password");
+            } else {
+                driver = "com.mysql.cj.jdbc.Driver";
+            }
 
-            driver = props.getProperty("db.driver", "com.mysql.cj.jdbc.Driver");
-            url = props.getProperty("db.url");
-            user = props.getProperty("db.user");
-            password = props.getProperty("db.password");
+            // Environment variable overrides for Cloud/Docker deployment
+            String envUrl = System.getenv("DB_URL");
+            if (envUrl != null && !envUrl.isBlank()) {
+                url = envUrl;
+            }
+            String envUser = System.getenv("DB_USER");
+            if (envUser != null && !envUser.isBlank()) {
+                user = envUser;
+            }
+            String envPass = System.getenv("DB_PASSWORD");
+            if (envPass != null) {
+                password = envPass;
+            }
 
             // Explicitly load the MySQL driver class
             Class.forName(driver);
             System.out.println("[DatabaseConnection] JDBC Driver registered: " + driver);
 
         } catch (IOException e) {
-            System.err.println("[DatabaseConnection] CRITICAL: Could not read " + PROPERTIES_FILE + 
-                               ". Ensure the file exists in src/main/resources/. Error: " + e.getMessage());
+            System.err.println("[DatabaseConnection] Warning reading " + PROPERTIES_FILE + ": " + e.getMessage());
         } catch (ClassNotFoundException e) {
             System.err.println("[DatabaseConnection] CRITICAL: MySQL Driver class not found: " + driver);
         } finally {

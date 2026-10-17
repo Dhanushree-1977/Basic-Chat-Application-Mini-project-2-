@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # 1. Database Persistence Service (MySQL 8.0)
+  mysql:
+    image: mysql:8.0
+    container_name: realtime-chat-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: realtime_chat
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Real-Time TLS Socket Chat Server Service
+  chat-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: realtime-chat-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/realtime_chat?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+    ports:
+      - "5000:5000"
+
+volumes:
+  mysql-data:
+    driver: local

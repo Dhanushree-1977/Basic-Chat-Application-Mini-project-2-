@@ -11,3 +11,4 @@ db.properties
 *.log
 *Test*.java
 Test*.java
+dependency-reduced-pom.xml
