@@ -197,11 +197,18 @@ For detailed production cloud setups (AWS EC2, DigitalOcean, Ubuntu systemd, LAN
 
 ## 🧪 Running Unit Tests
 
-Run the JUnit 5 test suite:
+Run the JUnit 5 test suite using Maven:
 ```bash
 mvn test
 ```
-Or on Windows:
+
+Or using the included zero-setup Maven wrapper:
+```bash
+./mvnw test        # macOS / Linux
+.\mvnw.cmd test    # Windows
+```
+
+Or using the standalone offline test runner on Windows:
 ```cmd
 run-tests.bat
 ```
